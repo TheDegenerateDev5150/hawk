@@ -12,18 +12,22 @@ import (
 // initCmd represents the init command
 var initCmd = &cobra.Command{
 	Use:   "init",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Short: "Initializes a project",
+	Long: `Creates a new project and initializes it.
+Adds go.mod with the given repository path as module name.
+In addition, the basic proto file is added. If a name is provided, it is used, the the basename of the given repository otherwise.
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	RunE: func(cmd *cobra.Command, args []string) error {
+Example:
+hawk init github.com/my-org/test-service test
+Output:
+ - go.mod
+   module: github.com/my-org/test-service
+ - test.proto
+   service: Test`,
+	Run: func(cmd *cobra.Command, args []string) {
 		g := kit.NewGenerator()
 		err := g.Init(args...)
-		printError(err)
-		return err
+		printErrorAndExit(err)
 	},
 }
 

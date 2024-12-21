@@ -39,7 +39,7 @@ type Definition struct {
 	enums       []*io.Enum
 	enumsMap    map[string]*io.Enum
 	messages    []*io.Message
-	messagesMap map[string]*io.Message
+	MessagesMap map[string]*io.Message
 
 	Services []*Service
 }
@@ -51,6 +51,7 @@ func (d Definition) Package() string {
 type Service struct {
 	*io.Service
 	Name          string
+	Description   string
 	HttpPrefix    string
 	Compressed    *bool
 	WSPath        string
@@ -99,7 +100,7 @@ func (d Definition) getType(field *io.Field) Type {
 		return TypeScalar
 	} else if field.Type.Map != nil {
 		return TypeMap
-	} else if _, ok := d.messagesMap[field.Type.Reference]; ok {
+	} else if _, ok := d.MessagesMap[field.Type.Reference]; ok {
 		return TypeMessage
 	} else if _, ok = d.enumsMap[field.Type.Reference]; ok {
 		return TypeEnum
@@ -138,7 +139,7 @@ func (o *OptionHttp) GorillaMuxPath() string {
 }
 
 func (m *Method) CheckParams(def *Definition) error {
-	msg, ok := def.messagesMap[m.Request]
+	msg, ok := def.MessagesMap[m.Request]
 	if !ok {
 		return errors.New("message `" + m.Request + "` not found")
 	}
@@ -220,6 +221,10 @@ func (s *Service) CheckParams(def *Definition) error {
 		}
 	}
 	return nil
+}
+
+func (s *Service) CompressionEnabled() bool {
+	return s.Compressed != nil && *s.Compressed
 }
 
 func (s *Service) CompressionUsed() bool {
@@ -361,6 +366,15 @@ func (d Definition) serviceFromProto(service *io.Service) (*Service, error) {
 		Name:    service.Name,
 		Methods: make([]*Method, 0),
 	}
+	if service.Comments != nil {
+		for i, c := range service.Comments {
+			c = strings.Trim(c, "/* ")
+			if i > 0 {
+				s.Description += "\n"
+			}
+			s.Description += c
+		}
+	}
 	for _, entry := range service.Entries {
 		if entry.Method != nil {
 			m, err := d.methodFromProto(s, entry.Method)
@@ -409,13 +423,13 @@ func DefinitionFromProto(data *io.Proto) (*Definition, error) {
 		enums:       make([]*io.Enum, 0),
 		enumsMap:    make(map[string]*io.Enum),
 		messages:    make([]*io.Message, 0),
-		messagesMap: make(map[string]*io.Message),
+		MessagesMap: make(map[string]*io.Message),
 	}
 
 	for _, entry := range data.Entries {
 		if entry.Message != nil {
 			d.messages = append(d.messages, entry.Message)
-			d.messagesMap[entry.Message.Name] = entry.Message
+			d.MessagesMap[entry.Message.Name] = entry.Message
 		} else if entry.Enum != nil {
 			d.enums = append(d.enums, entry.Enum)
 		} else if entry.Service != nil {

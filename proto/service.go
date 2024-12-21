@@ -12,7 +12,7 @@ import (
 
 type Parser interface {
 	DetectFile(args ...string) (string, error)
-	Parse(file string) error
+	Parse(file string, comments ...bool) error
 	ParseString(data string) error
 	Definition() *Definition
 	CreateFile(file, pgk, srv string) error
@@ -55,7 +55,7 @@ func (p *service) DetectFile(args ...string) (string, error) {
 	return "", errors.New("no .proto file found")
 }
 
-func (p *service) Parse(file string) error {
+func (p *service) Parse(file string, comments ...bool) error {
 	f, err := os.Open(file)
 	if err != nil {
 		return err
@@ -65,7 +65,7 @@ func (p *service) Parse(file string) error {
 	}()
 
 	p.file = file
-	p.data, err = io.Parse(file, f)
+	p.data, err = io.Parse(file, f, len(comments) > 0 && comments[0])
 	if err != nil {
 		return err
 	}
@@ -77,7 +77,7 @@ func (p *service) Parse(file string) error {
 
 func (p *service) ParseString(data string) error {
 	var err error
-	p.data, err = io.ParseString("", data)
+	p.data, err = io.ParseString("", data, false)
 	if err != nil {
 		return err
 	}
@@ -88,7 +88,7 @@ func (p *service) ParseString(data string) error {
 }
 
 func (p *service) CreateFile(file, pkg, srv string) error {
-	f, err := os.OpenFile(file, os.O_CREATE|os.O_TRUNC, 0777)
+	f, err := os.OpenFile(file, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0666)
 	if err != nil {
 		return errors.Wrapf(err, "failed to open file '%s'", file)
 	}

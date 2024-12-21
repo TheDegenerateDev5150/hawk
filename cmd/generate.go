@@ -13,18 +13,25 @@ import (
 var generateCmd = &cobra.Command{
 	Use:     "generate",
 	Aliases: []string{"gen", "g"},
-	Short:   "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Short:   "Generates the go service based on the proto file",
+	Long: `Generated files:
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	RunE: func(cmd *cobra.Command, args []string) error {
+Project dir
+├── cmd # do not touch, will be overridden
+│   ├── <project>
+│   │   ├── main.go
+├── handlers
+│   ├── handlers.go # entrypoint for business logic, endpoints are updated
+│   ├── hooks.go # stop gracefully, generated only once
+│   ├── middleware.go # apply middleware, generated only once
+├── svc # do not touch, will be overridden
+├── go.mod
+├── go.sum
+├── *.pb.go # do not touch, will be overridden`,
+	Run: func(cmd *cobra.Command, args []string) {
 		g := kit.NewGenerator()
 		err := g.Service(args...)
-		printError(err)
-		return err
+		printErrorAndExit(err)
 	},
 }
 
