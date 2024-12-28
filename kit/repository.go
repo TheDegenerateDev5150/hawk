@@ -37,16 +37,20 @@ func (r repository) GoModInit(pkg string) error {
 }
 
 func (r repository) GoModTidy() error {
+	err := exec.Command("go", "get", "google.golang.org/genproto@latest").Run()
+	if err != nil {
+		return err
+	}
 	return exec.Command("go", "mod", "tidy").Run()
 }
 
 // WriteFile creates or overrides a file with the data from the reader
 func (r repository) WriteFile(name string, reader io.Reader) error {
-	err := os.MkdirAll(filepath.Dir(name), 0666)
+	err := os.MkdirAll(filepath.Dir(name), 0777)
 	if err != nil {
 		return err
 	}
-	f, err := os.OpenFile(name, os.O_CREATE|os.O_TRUNC, 0777)
+	f, err := os.OpenFile(name, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0666)
 	if err != nil {
 		return err
 	}

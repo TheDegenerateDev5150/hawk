@@ -4,7 +4,9 @@ Copyright © 2023 Nick Godzieba nick.godzieba@outlook.de
 package cmd
 
 import (
+	"errors"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -12,13 +14,8 @@ import (
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "hawk",
-	Short: "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "A go boilerplate generator based on a proto file",
+	Long:  `Hawk is a CLI-tool to build microservices with go in a way, you can focus on the business logic. Multiple transport layers are supported, everything starts with a proto file! `,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -42,10 +39,15 @@ func init() {
 	//rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
-func printError(err error) {
-	//if err != nil {
-	//for ; err != nil; err = errors.Unwrap(err) {
-	//println(err.Error())
-	//}
-	//}
+func printErrorAndExit(err error) {
+	if err != nil {
+		last := ""
+		for ; err != nil; err = errors.Unwrap(err) {
+			if !strings.Contains(last, err.Error()) {
+				last = err.Error()
+				println(last)
+			}
+		}
+		os.Exit(1)
+	}
 }

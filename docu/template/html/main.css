@@ -1,0 +1,122 @@
+:root {
+    color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --background-color: #323232;
+        --side-color: #252525;
+        --text-color: #ddd;
+        --highlight: #666;
+        --primary: hsl(12, 90%, 60%);
+    }
+}
+
+@media (prefers-color-scheme: light) {
+    :root {
+        --background-color: #fefefe;
+        --side-color: #626262;
+        --text-color: #222;
+        --highlight: #cdcdcd;
+        --primary: hsl(12, 70%, 40%);
+    }
+}
+
+body {
+    background-color: var(--background-color);
+    color: var(--text-color);
+    margin: 0;
+    padding: 0;
+
+    display: flex;
+    flex-direction: row;
+
+    font-family: 'Roboto', sans-serif;
+}
+
+.col {
+    display: flex;
+    flex-direction: column;
+}
+
+.side {
+    background-color: var(--side-color);
+    padding: 1em;
+    height: calc(100vh - 2em);
+    overflow: hidden auto;
+}
+
+main {
+    height: calc(100vh - 2em);
+    padding: 1em;
+    display: flex;
+    flex-grow: 1;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+main h2, main h3 {
+    color: var(--primary);
+}
+
+main h2 + h3, main h3 + h4 {
+    margin-top: 0;
+}
+
+main .method {
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+main .description {
+    margin: .5em 0;
+}
+
+main table {
+    border-collapse: collapse;
+    border-spacing: 0;
+}
+
+main table th {
+    font-size: 0.925em;
+    border-bottom: 1px solid var(--highlight);
+    vertical-align: bottom;
+    text-align: left;
+    line-height: 1.6;
+    padding-right: 1em;
+}
+
+main table td {
+    text-align: left;
+    vertical-align: top;
+    line-height: 1.6;
+    font-weight: 300;
+    color: var(--text-color);
+    padding-right: 1em;
+}
+
+.side nav {
+    display: flex;
+    flex-direction: column;
+}
+
+.side .section {
+    font-size: large;
+    font-weight: bold;
+    margin: .3em 0 0 0;
+}
+
+.side nav span {
+    padding: .2em 0;
+}
+
+.side a {
+    width: 100%;
+    padding: .3em;
+    color: var(--text-color);
+    text-decoration: none;
+}
+
+.side a:hover {
+    background-color: var(--highlight);
+}

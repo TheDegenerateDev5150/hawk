@@ -6,6 +6,7 @@ import (
 	"io"
 	"regexp"
 	"strings"
+	"text/scanner"
 )
 
 type Boolean bool
@@ -32,14 +33,16 @@ type Entry struct {
 	Enum    *Enum    `parser:"| @@"`
 	Option  *Option  `parser:"| 'option' @@"`
 	Extend  *Extend  `parser:"| @@"`
+	Comment string   `parser:"| @Comment"`
 }
 
 type Option struct {
 	Pos lexer.Position
 
-	Name  string  `parser:"( '(' @Ident @( '.' Ident )* ')' | @Ident @( '.' @Ident )* )"`
-	Attr  *string `parser:"( '.' @Ident ( '.' @Ident )* )?"`
-	Value *Value  `parser:"'=' @@"`
+	Comments []string `parser:"@Comment*"`
+	Name     string   `parser:"( '(' @Ident @( '.' Ident )* ')' | @Ident @( '.' @Ident )* )"`
+	Attr     *string  `parser:"( '.' @Ident ( '.' @Ident )* )?"`
+	Value    *Value   `parser:"'=' @@"`
 }
 
 type Value struct {
@@ -76,13 +79,15 @@ type MapEntry struct {
 type Extensions struct {
 	Pos lexer.Position
 
-	Extensions []Range `parser:"'extensions' @@ ( ',' @@ )*"`
+	Comments   []string `parser:"@Comment* (?= 'extensions')"`
+	Extensions []Range  `parser:"'extensions' @@ ( ',' @@ )*"`
 }
 
 type Reserved struct {
 	Pos lexer.Position
 
-	Reserved []Range `parser:"'reserved' @@ ( ',' @@ )*"`
+	Comments []string `parser:"@Comment* (?= 'reserved')"`
+	Reserved []Range  `parser:"'reserved' @@ ( ',' @@ )*"`
 }
 
 type Range struct {
@@ -95,6 +100,7 @@ type Range struct {
 type Extend struct {
 	Pos lexer.Position
 
+	Comments  []string `parser:"@Comment* (?= 'extend')"`
 	Reference string   `parser:"'extend' @Ident ( '.' @Ident )*"`
 	Fields    []*Field `parser:"'{' ( @@ ';'? )* '}'"`
 }
@@ -102,8 +108,9 @@ type Extend struct {
 type Service struct {
 	Pos lexer.Position
 
-	Name    string          `parser:"'service' @Ident"`
-	Entries []*ServiceEntry `parser:"'{' ( @@ ';'? )* '}'"`
+	Comments []string        `parser:"@Comment* (?= 'service')"`
+	Name     string          `parser:"'service' @Ident"`
+	Entries  []*ServiceEntry `parser:"'{' ( @@ ';'? )* '}'"`
 }
 
 type ServiceEntry struct {
@@ -116,6 +123,7 @@ type ServiceEntry struct {
 type Method struct {
 	Pos lexer.Position
 
+	Comments          []string  `parser:"@Comment* (?= 'rpc')"`
 	Name              string    `parser:"'rpc' @Ident"`
 	StreamingRequest  bool      `parser:"'(' @'stream'?"`
 	Request           *Type     `parser:"    @@ ')'"`
@@ -127,8 +135,9 @@ type Method struct {
 type Enum struct {
 	Pos lexer.Position
 
-	Name   string       `parser:"'enum' @Ident"`
-	Values []*EnumEntry `parser:"'{' ( @@ ( ';' )* )* '}'"`
+	Comments []string     `parser:"@Comment* (?= 'enum')"`
+	Name     string       `parser:"'enum' @Ident"`
+	Values   []*EnumEntry `parser:"'{' ( @@ ( ';' )* )* '}'"`
 }
 
 type EnumEntry struct {
@@ -150,8 +159,9 @@ type EnumValue struct {
 type Message struct {
 	Pos lexer.Position
 
-	Name    string          `parser:"'message' @Ident"`
-	Entries []*MessageEntry `parser:"'{' @@* '}'"`
+	Comments []string        `parser:"@Comment* (?= 'message')"`
+	Name     string          `parser:"'message' @Ident"`
+	Entries  []*MessageEntry `parser:"'{' @@* '}'"`
 }
 
 type MessageEntry struct {
@@ -170,8 +180,9 @@ type MessageEntry struct {
 type OneOf struct {
 	Pos lexer.Position
 
-	Name    string        `parser:"'oneof' @Ident"`
-	Entries []*OneOfEntry `parser:"'{' ( @@ ';'* )* '}'"`
+	Comments []string      `parser:"@Comment* (?= 'oneof')"`
+	Name     string        `parser:"'oneof' @Ident"`
+	Entries  []*OneOfEntry `parser:"'{' ( @@ ';'* )* '}'"`
 }
 
 type OneOfEntry struct {
@@ -184,9 +195,10 @@ type OneOfEntry struct {
 type Field struct {
 	Pos lexer.Position
 
-	Optional bool `parser:"(   @'optional'"`
-	Required bool `parser:"  | @'required'"`
-	Repeated bool `parser:"  | @'repeated' )?"`
+	Comments []string `parser:"@Comment*"`
+	Optional bool     `parser:"(   @'optional'"`
+	Required bool     `parser:"  | @'required'"`
+	Repeated bool     `parser:"  | @'repeated' )?"`
 
 	Type Type   `parser:"@@"`
 	Name string `parser:"@Ident"`
@@ -275,7 +287,6 @@ type Variable struct {
 }
 
 var (
-	parser = participle.MustBuild[Proto](participle.Unquote("String"), participle.UseLookahead(2))
 	//parserPath = participle.MustBuild[Path](participle.Lexer(lexer.MustSimple([]lexer.SimpleRule{
 	//	{"Ident", `[a-zA-Z_][a-zA-Z0-9_-]*`},
 	//	{"Symbol", `[/:]`},
@@ -290,12 +301,24 @@ var (
 	patternVerb = regexp.MustCompile(`(.*):([A-Za-z]+)$`)
 )
 
-func Parse(filename string, r io.Reader) (*Proto, error) {
-	return parser.Parse(filename, r)
+func parser(comments bool) *participle.Parser[Proto] {
+	return participle.MustBuild[Proto](
+		participle.Unquote("String"),
+		participle.UseLookahead(2),
+		participle.Lexer(lexer.NewTextScannerLexer(func(s *scanner.Scanner) {
+			if comments {
+				s.Mode = scanner.ScanIdents | scanner.ScanFloats | scanner.ScanChars | scanner.ScanStrings | scanner.ScanRawStrings | scanner.ScanComments
+			}
+		})),
+	)
 }
 
-func ParseString(filename string, data string) (*Proto, error) {
-	return parser.ParseString(filename, data)
+func Parse(filename string, r io.Reader, comments bool) (*Proto, error) {
+	return parser(comments).Parse(filename, r)
+}
+
+func ParseString(filename string, data string, comments bool) (*Proto, error) {
+	return parser(comments).ParseString(filename, data)
 }
 
 // TODO: improve this function

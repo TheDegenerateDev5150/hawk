@@ -19,7 +19,7 @@ go install github.com/niiigoo/hawk@latest
 ### Dependencies
 
 In order to compile the `.proto` file, `protoc` is required
-([official installation instruction](https://grpc.io/docs/protoc-installation/)).
+([official installation instructions](https://grpc.io/docs/protoc-installation/)).
 
 In addition, the go specific extensions are necessary:
 
@@ -199,10 +199,17 @@ To fix this, you can tell your IDE the locations:
 That's how it looks like in Goland:
 ![img.png](golandProtoc.png)
 
+## Documentation
+
+API documentation can be generated based on the proto file. The supported formats are Markdown (default) and HTML.
+```shell
+hawk docu # generates a markdown file
+hawk docu -f html # generates a basic website
+```
+
 ## Potential new features
 
 - Generate documentation
-  - Markdown
   - Swagger
 - Advanced tools
   - `hawk generate entity <name>`

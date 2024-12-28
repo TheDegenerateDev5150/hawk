@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>{{ .Service.Name }} API documentation</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="main.css">
+    <meta name="color-scheme" content="light dark">
+</head>
+<body>
+    <div class="side">
+        <div class="col">
+            <h1>{{ .Service.Name }} service</h1>
+            {{ if .VersionName }}<span><b>Version:</b> {{ .VersionName }}</span>{{ end }}
+            <span><b>Time:</b> {{ .VersionTime }}</span>
+        </div>
+        <br/>
+        <nav>
+            <span class="section">Methods</span>
+            {{ range $m := .Service.Methods }}
+            <a href="#{{ $m.Name }}">{{ $m.Name }}</a>
+            {{ end }}
+            <span class="section">Objects</span>
+            {{ range $m := .Referenced }}{{ $msg := (index $.Messages $m) }}{{ if $msg.Name }}
+            <a href="#{{ $msg.Name }}">{{ $msg.Name }}</a>
+            {{ end }}{{ end }}
+        </nav>
+    </div>
+    <main>
+        <h2>Configuration</h2>
+        <span>Path prefix: <code>{{ if .Service.HttpPrefix }}{{ .Service.HttpPrefix }}{{ else }}/{{ end }}</code></span>
+        <span>Compression enabled: {{ if .Service.CompressionEnabled }}yes{{ else }}no{{ end }}</span>
+        {{ if .Service.WSPath }}<span>WebSocket supported, path: {{ .Service.WSPath }}</span>{{ end }}
+
+        <h2>Methods</h2>
+        {{ range $m := .Service.Methods }}
+            <h3 id="{{ $m.Name }}">{{ $m.Name }}</h3>{{ range $b := $m.HttpBindings }}
+            <div><span class="method">{{ $b.Method }}</span> <code>{{ $b.PathRaw }}</code></div>{{ end }}
+            {{ if $m.Method.Comments}}<span class="description">{{ $m.Method.Comments | NormalizeComments }}</span>{{ end }}
+            {{ if (index $.Messages $m.Request).Fields }}<h4>Parameters</h4>
+            <div>
+                <table>
+                    <tr>
+                        <th>name</th>
+                        <th>required</th>
+                        <th>type</th>
+                        <th>description</th>
+                        <th>additional information</th>
+                    </tr>{{ range $f := (index $.Messages $m.Request).Fields }}
+                    <tr>
+                        <td>{{ $f.Name }}</td>
+                        <td>{{ if $f.Optional }}no{{ else }}yes{{ end }}</td>
+                        <td>{{ $f.Type }}</td>
+                        <td>{{ $f.Description }}</td>
+                        <td>{{ range $o := $f.Options }}<code>{{ $o }}</code><br/>{{ end }}</td>
+                    </tr>{{ end }}
+                </table>
+            </div>
+        {{ end }}{{ if (index $.Messages $m.Response).Fields }}<h4>Response</h4>
+            <div>
+                <table>
+                    <tr>
+                        <th>name</th>
+                        <th>required</th>
+                        <th>type</th>
+                        <th>description</th>
+                        <th>additional information</th>
+                    </tr>{{ range $f := (index $.Messages $m.Response).Fields }}
+                    <tr>
+                        <td>{{ $f.Name }}</td>
+                        <td>{{ if $f.Optional }}no{{ else }}yes{{ end }}</td>
+                        <td>{{ $f.Type }}</td>
+                        <td>{{ $f.Description }}</td>
+                        <td>{{ range $o := $f.Options }}<code>{{ $o }}</code><br/>{{ end }}</td>
+                    </tr>{{ end }}
+                </table>
+            </div>
+        {{ end }}{{ end }}
+
+        <h2>Objects</h2>
+        {{ range $name := .Referenced }}{{ $msg := (index $.Messages $name) }}{{ if $msg.Name }}
+            <h3 id="{{ $msg.Name }}">{{ $msg.Name }}</h3>
+            <div>
+                <table>
+                    <tr>
+                        <th>name</th>
+                        <th>required</th>
+                        <th>type</th>
+                        <th>description</th>
+                        <th>additional information</th>
+                    </tr>{{ range $f := $msg.Fields }}
+                    <tr>
+                        <td>{{ $f.Name }}</td>
+                        <td>{{ if $f.Optional }}no{{ else }}yes{{ end }}</td>
+                        <td>{{ $f.Type }}</td>
+                        <td>{{ $f.Description }}</td>
+                        <td>{{ range $o := $f.Options }}<code>{{ $o }}</code><br/>{{ end }}</td>
+                    </tr>{{ end }}
+                </table>
+            </div>
+        {{ end }}{{ end }}
+    </main>
+</body>
+</html>
