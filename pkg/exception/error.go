@@ -3,6 +3,7 @@ package exception
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"github.com/bufbuild/protovalidate-go"
 	kit "github.com/go-kit/kit/transport/http"
 	"github.com/google/uuid"
@@ -37,6 +38,10 @@ type Exception interface {
 	kit.StatusCoder
 	json.Marshaler
 	GRPCStatus() *status.Status
+}
+
+type ValidationError struct {
+	Violations []*protovalidate.Violation
 }
 
 // NewLog returns an error function containing the message and status codes. Errors are logged.
@@ -143,9 +148,10 @@ func LogFatal(ctx context.Context, msg string, err error, details logrus.Fields)
 func ProtoValidationReasons(err error) map[string]string {
 	reasons := make(map[string]string)
 
-	if e, ok := err.(*protovalidate.ValidationError); ok {
+	var e *protovalidate.ValidationError
+	if errors.As(err, &e) {
 		for _, v := range e.Violations {
-			reasons[v.FieldPath] = v.Message
+			reasons[string(v.FieldDescriptor.Name())] = v.Proto.GetMessage()
 		}
 	}
 
